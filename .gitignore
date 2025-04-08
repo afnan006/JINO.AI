@@ -1,0 +1,40 @@
+# 🔒 Secret stuff
+.env
+*.env
+*.key
+*.pem
+openai_api_key.txt
+firebase_service_account.json
+
+# 🧠 Local memory, caches, and dev stuff
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.DS_Store
+
+# 🧪 LocalStorage, test files, dbs
+*.sqlite3
+*.db
+*.local.json
+memory/
+tmp/
+secrets/
+
+# 📦 Virtual environments
+venv/
+env/
+ENV/
+
+# 🚫 Node_modules for React frontend
+node_modules/
+
+# 🧼 VSCode & OS garbage
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+
+# 🔫 JINO Core secrets
+jino_secret_config.json
+auth_tokens.json
