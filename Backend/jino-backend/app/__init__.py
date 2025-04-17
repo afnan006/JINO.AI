@@ -1,8 +1,11 @@
 from flask import Flask
 from config import Config
+from flask_cors import CORS
+
 
 def create_app():
     app = Flask(__name__)
+    CORS(app, resources={r"/*": {"origins": "*"}})  # Allow everything for now (dev only)
     app.config.from_object(Config)
 
     # Register blueprints
@@ -17,4 +20,5 @@ def create_app():
     def ping():
         return {"status": "JINO is alive and judging you 👀"}
 
+    # @app.route("/health")
     return app
