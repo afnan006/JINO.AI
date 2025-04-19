@@ -1,0 +1,28 @@
+{
+  "chat_1": [
+    {
+      "timestamp": "2025-04-19T19:08:04.015221",
+      "category": "emotional_state",
+      "judgement": "User seems to be in a neutral mood, but expresses concern about employment.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-19T19:09:23.078408",
+      "category": "emotional_state",
+      "judgement": "User seems curious and playful.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-19T19:10:51.328606",
+      "category": "emotional_state",
+      "judgement": "User seems excited and determined, but also frustrated and dismissive.",
+      "confidence": "high"
+    },
+    {
+      "timestamp": "2025-04-19T19:12:46.979574",
+      "category": "emotional_state",
+      "judgement": "User seems frustrated and possibly playful or joking, but also serious about their involvement in JINO.AI.",
+      "confidence": "medium"
+    }
+  ]
+}
