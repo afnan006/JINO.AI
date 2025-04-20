@@ -1,7 +1,186 @@
-# # # # # extract.py
+# # # # # from flask import Blueprint, request, jsonify
+# # # # # from app.utils.openrouter_client import call_openrouter
+# # # # # from app.utils.memory import merge_memory, save_memory, save_judgement
+# # # # # from datetime import datetime
+# # # # # import json
+# # # # # import re
+
+# # # # # extract_bp = Blueprint('extract', __name__)
+
+# # # # # @extract_bp.route('/extract', methods=['POST'])
+# # # # # def extract():
+# # # # #     user_input = request.json.get('message', '')
+# # # # #     existing_memory = request.json.get('memory', {})
+# # # # #     convo_summary_list = request.json.get('convo_summary', [])  # 🧠 New input
+# # # # #     user_id = request.json.get('user_id', None)
+# # # # #     chat_id = request.json.get('chat_id', 'chat_1')
+
+# # # # #     if not user_input:
+# # # # #         return jsonify({"error": "Missing 'message' in request body"}), 400
+
+# # # # #     if not user_id:
+# # # # #         return jsonify({"error": "Missing 'user_id' in request"}), 400
+
+# # # # #     print("===== [/extract ROUTE HIT] =====")
+# # # # #     print(f"💬 User message: {user_input}")
+
+# # # # #     # --- Base prompt for memory + judgement extraction ---
+# # # # #     base_prompt = f"""
+# # # # # You are extracting personal facts **about the user** from their message.
+
+# # # # # Return two separate JSON blocks:
+
+# # # # # 1. "jino_memory": factual memory only (like name, city, job, etc.)
+# # # # # 2. "jino_judgement": emotional memory (like moods, opinions, personality insight)
+
+# # # # # Format:
+# # # # # {{
+# # # # #   "jino_memory": {{
+# # # # #     "key1": "value1"
+# # # # #   }},
+# # # # #   "jino_judgement": {{
+# # # # #     "judgement": "User seems frustrated but optimistic.",
+# # # # #     "category": "emotional_state",
+# # # # #     "confidence": "high"
+# # # # #   }}
+# # # # # }}
+
+# # # # # DO NOT wrap with markdown or explanation. Just pure JSON.
+
+# # # # # User message: "{user_input}"
+# # # # # """.strip()
+
+# # # # #     # --- If convo summary list is provided, append this to prompt ---
+# # # # #     convo_summary_prompt = ""
+# # # # #     if convo_summary_list and isinstance(convo_summary_list, list):
+# # # # #         convo_summary_prompt = "\n\nNow also summarize the following conversation:\n"
+# # # # #         for entry in convo_summary_list[-6:]:  # FIFO – just last 6 to keep it snappy
+# # # # #             msg = entry.get("message", "")
+# # # # #             ts = entry.get("timestamp", "")
+# # # # #             sender = entry.get("sender", "user")
+# # # # #             role = "User" if sender == "user" else "Jino"
+# # # # #             convo_summary_prompt += f"{role} ({ts}): {msg}\n"
+
+# # # # #         convo_summary_prompt += """
+# # # # # Return an additional key: "jino_convo_summary"
+
+# # # # # It should be:
+# # # # # {
+# # # # #   "jino_convo_summary": {
+# # # # #     "summary": "Brief but rich summary of last 6 interactions.",
+# # # # #     "latest_timestamp": "ISO_8601_time_of_last_message"
+# # # # #   }
+# # # # # }
+# # # # # """
+
+# # # # #     full_prompt = base_prompt + convo_summary_prompt
+
+# # # # #     models = [
+# # # # #         "mistralai/mixtral-8x7b-instruct"
+# # # # #     ]
+
+# # # # #     final_model = None
+# # # # #     final_result = None
+# # # # #     memory_updated = False
+# # # # #     updated_memory = existing_memory
+# # # # #     judgement_entry = {}
+# # # # #     convo_summary_output = {}
+
+# # # # #     for model in models:
+# # # # #         try:
+# # # # #             print(f"⚙️ Trying model: {model}")
+# # # # #             result = call_openrouter(
+# # # # #                 model=model,
+# # # # #                 messages=[{"role": "user", "content": full_prompt}],
+# # # # #                 temperature=0.3,
+# # # # #                 max_tokens=500
+# # # # #             )
+
+# # # # #             raw_response = result.get("content", "").strip()
+# # # # #             print(f"📦 Raw model response:\n{raw_response}")
+
+# # # # #             # Fix common formatting junk
+# # # # #             cleaned = raw_response.replace("\\_", "_")
+# # # # #             cleaned = re.sub(r"```json|```", "", cleaned).strip()
+
+# # # # #             # Ensure cleaned response is valid JSON (check if it's empty or malformed)
+# # # # #             if not cleaned:
+# # # # #                 print("❌ Cleaned response is empty!")
+# # # # #                 continue
+
+# # # # #             try:
+# # # # #                 parsed = json.loads(cleaned)
+# # # # #             except json.JSONDecodeError as jde:
+# # # # #                 print(f"❌ JSON decode failed after cleanup: {str(jde)}")
+# # # # #                 print("🧽 Cleaned content that failed:\n", cleaned)
+# # # # #                 continue
+
+# # # # #             if not isinstance(parsed, dict):
+# # # # #                 print("⚠️ Model returned non-dict JSON. Skipping.")
+# # # # #                 continue
+
+# # # # #             # ----- Memory -----
+# # # # #             memory_data = parsed.get("jino_memory", {})
+# # # # #             if isinstance(memory_data, dict) and memory_data:
+# # # # #                 updated_memory = merge_memory(existing_memory, memory_data)
+# # # # #                 memory_updated = updated_memory != existing_memory
+# # # # #                 if memory_updated:
+# # # # #                     save_memory(user_id, updated_memory)
+# # # # #                     print("✅ jino_memory updated and saved.")
+# # # # #                 else:
+# # # # #                     print("ℹ️ No new factual memory changes.")
+# # # # #             else:
+# # # # #                 print("🫥 No valid jino_memory returned.")
+
+# # # # #             # ----- Judgement -----
+# # # # #             judgement_data = parsed.get("jino_judgement", {})
+# # # # #             if isinstance(judgement_data, dict) and "judgement" in judgement_data:
+# # # # #                 judgement_entry = {
+# # # # #                     "timestamp": datetime.utcnow().isoformat(),
+# # # # #                     "category": judgement_data.get("category", "emotional_state"),
+# # # # #                     "judgement": judgement_data.get("judgement"),
+# # # # #                     "confidence": judgement_data.get("confidence", "medium")
+# # # # #                 }
+
+# # # # #                 save_judgement(user_id, chat_id, judgement_entry)
+# # # # #                 print("🧠 [JINO Judgement Saved]:")
+# # # # #                 print(json.dumps(judgement_entry, indent=2))
+# # # # #             else:
+# # # # #                 print("🫥 No valid jino_judgement returned.")
+
+# # # # #             # ----- Convo Summary (NEW STUFF) -----
+# # # # #             convo_summary = parsed.get("jino_convo_summary", {})
+# # # # #             if isinstance(convo_summary, dict) and "summary" in convo_summary:
+# # # # #                 convo_summary_output = convo_summary
+# # # # #                 print("🧾 [Convo Summary Extracted]:")
+# # # # #                 print(json.dumps(convo_summary_output, indent=2))
+# # # # #             else:
+# # # # #                 print("⚠️ No valid convo summary found or malformed.")
+
+# # # # #             final_result = result
+# # # # #             final_model = model
+# # # # #             break
+
+# # # # #         except Exception as e:
+# # # # #             print(f"💥 Unexpected error from {model}: {str(e)}")
+# # # # #             continue
+
+# # # # #     # Save memory and judgement to local storage on frontend side (replace it here for your frontend code)
+# # # # #     response = {
+# # # # #         "extracted": updated_memory,
+# # # # #         "judgement": judgement_entry,
+# # # # #         "convo_summary": convo_summary_output,
+# # # # #         "tokens_used": final_result.get("tokens", {}) if final_result else {},
+# # # # #         "model_used": final_model or "none",
+# # # # #         "memory_updated": memory_updated
+# # # # #     }
+
+# # # # #     return jsonify(response), 200
+
 # # # # from flask import Blueprint, request, jsonify
 # # # # from app.utils.openrouter_client import call_openrouter
-# # # # from app.utils.memory import merge_memory, save_memory
+# # # # from app.utils.memory import merge_memory, save_memory, save_judgement
+# # # # from datetime import datetime
 # # # # import json
 # # # # import re
 
@@ -11,116 +190,177 @@
 # # # # def extract():
 # # # #     user_input = request.json.get('message', '')
 # # # #     existing_memory = request.json.get('memory', {})
+# # # #     convo_summary_list = request.json.get('convo_summary', [])  # 🧠 New input
 # # # #     user_id = request.json.get('user_id', None)
+# # # #     chat_id = request.json.get('chat_id', 'chat_1')
 
 # # # #     if not user_input:
-# # # #         print("❌ No 'message' found in request body")
 # # # #         return jsonify({"error": "Missing 'message' in request body"}), 400
 
 # # # #     if not user_id:
-# # # #         print("❌ No 'user_id' provided")
 # # # #         return jsonify({"error": "Missing 'user_id' in request"}), 400
 
 # # # #     print("===== [/extract ROUTE HIT] =====")
 # # # #     print(f"💬 User message: {user_input}")
-# # # #     print("📂 Existing memory (before merge):")
-# # # #     print(json.dumps(existing_memory, indent=2))
 
-# # # #     prompt = f"""
+# # # #     # --- Base prompt for memory + judgement extraction ---
+# # # #     base_prompt = f"""
 # # # # You are extracting personal facts **about the user** from their message.
 
-# # # # Your job:
-# # # # - Convert useful facts into a dynamic, flat JSON object.
-# # # # - The keys should be auto-generated based on the content. For example:
-# # # #   - "I’m moving to Bangalore next week" → {{"city": "Bangalore"}}
-# # # #   - "It’s my 23rd birthday today!" → {{"age": "23"}}
-# # # #   - "I'm jobless again lol" → {{"job_status": "unemployed"}}
-# # # # - You may reuse or update previous facts if there's a new update (e.g., new age, new city, new job).
-# # # # - DO NOT include any facts about the AI (Jino) itself.
-# # # # - DO NOT add commentary or explanation. Just the JSON.
-# # # # - Be smart about sarcasm and tone, but don’t make things up.
+# # # # Return two separate JSON blocks:
+
+# # # # 1. "jino_memory": factual memory only (like name, city, job, etc.)
+# # # # 2. "jino_judgement": emotional memory (like moods, opinions, personality insight)
+
+# # # # Format:
+# # # # {{
+# # # #   "jino_memory": {{
+# # # #     "key1": "value1"
+# # # #   }},
+# # # #   "jino_judgement": {{
+# # # #     "judgement": "User seems frustrated but optimistic.",
+# # # #     "category": "emotional_state",
+# # # #     "confidence": "high"
+# # # #   }}
+# # # # }}
+
+# # # # DO NOT wrap with markdown or explanation. Just pure JSON.
 
 # # # # User message: "{user_input}"
 # # # # """.strip()
 
+# # # #     # --- If convo summary list is provided, append this to prompt ---
+# # # #     convo_summary_prompt = ""
+# # # #     if convo_summary_list and isinstance(convo_summary_list, list):
+# # # #         convo_summary_prompt = "\n\nNow also summarize the following conversation:\n"
+# # # #         for entry in convo_summary_list[-6:]:  # FIFO – just last 6 to keep it snappy
+# # # #             msg = entry.get("message", "")
+# # # #             ts = entry.get("timestamp", "")
+# # # #             sender = entry.get("sender", "user")
+# # # #             role = "User" if sender == "user" else "Jino"
+# # # #             convo_summary_prompt += f"{role} ({ts}): {msg}\n"
+
+# # # #         convo_summary_prompt += """
+# # # # Return an additional key: "jino_convo_summary"
+
+# # # # It should be:
+# # # # {
+# # # #   "jino_convo_summary": {
+# # # #     "summary": "Brief but rich summary of last 6 interactions.",
+# # # #     "latest_timestamp": "ISO_8601_time_of_last_message"
+# # # #   }
+# # # # }
+# # # # """
+
+# # # #     full_prompt = base_prompt + convo_summary_prompt
+
 # # # #     models = [
-# # # #         "deepseek/deepseek-r1:free",
 # # # #         "mistralai/mixtral-8x7b-instruct"
 # # # #     ]
 
-# # # #     updated_memory = None
-# # # #     extracted_json = None
-# # # #     final_result = None
 # # # #     final_model = None
+# # # #     final_result = None
 # # # #     memory_updated = False
+# # # #     updated_memory = existing_memory
+# # # #     judgement_entry = {}
+# # # #     convo_summary_output = {}
 
 # # # #     for model in models:
 # # # #         try:
 # # # #             print(f"⚙️ Trying model: {model}")
 # # # #             result = call_openrouter(
 # # # #                 model=model,
-# # # #                 messages=[{"role": "user", "content": prompt}],
-# # # #                 temperature=0,
-# # # #                 max_tokens=300
+# # # #                 messages=[{"role": "user", "content": full_prompt}],
+# # # #                 temperature=0.3,
+# # # #                 max_tokens=500
 # # # #             )
 
 # # # #             raw_response = result.get("content", "").strip()
-# # # #             print(f"📦 Raw model response: {raw_response}")
+# # # #             print(f"📦 Raw model response:\n{raw_response}")
 
-# # # #             cleaned = re.sub(r"```json|```", "", raw_response).strip()
+# # # #             # Fix common formatting junk
+# # # #             cleaned = raw_response.replace("\\_", "_")
+# # # #             cleaned = re.sub(r"```json|```", "", cleaned).strip()
 
+# # # #             # Ensure cleaned response is valid JSON (check if it's empty or malformed)
 # # # #             if not cleaned:
-# # # #                 print("⚠️ Cleaned response is empty. Trying next model...")
+# # # #                 print("❌ Cleaned response is empty!")
 # # # #                 continue
 
-# # # #             extracted_json = json.loads(cleaned)
-
-# # # #             if not extracted_json or not isinstance(extracted_json, dict) or extracted_json == {}:
-# # # #                 print("⚠️ No valid JSON extracted. Trying next model...")
+# # # #             try:
+# # # #                 parsed = json.loads(cleaned)
+# # # #             except json.JSONDecodeError as jde:
+# # # #                 print(f"❌ JSON decode failed after cleanup: {str(jde)}")
+# # # #                 print("🧽 Cleaned content that failed:\n", cleaned)
 # # # #                 continue
 
-# # # #             # Merge only if we got something useful
-# # # #             updated_memory = merge_memory(existing_memory, extracted_json)
-# # # #             memory_updated = updated_memory != existing_memory  # Check if anything changed
+# # # #             if not isinstance(parsed, dict):
+# # # #                 print("⚠️ Model returned non-dict JSON. Skipping.")
+# # # #                 continue
+
+# # # #             # ----- Memory -----
+# # # #             memory_data = parsed.get("jino_memory", {})
+# # # #             if isinstance(memory_data, dict) and memory_data:
+# # # #                 updated_memory = merge_memory(existing_memory, memory_data)
+# # # #                 memory_updated = updated_memory != existing_memory
+# # # #                 if memory_updated:
+# # # #                     save_memory(user_id, updated_memory)
+# # # #                     print("✅ jino_memory updated and saved.")
+# # # #                 else:
+# # # #                     print("ℹ️ No new factual memory changes.")
+# # # #             else:
+# # # #                 print("🫥 No valid jino_memory returned.")
+
+# # # #             # ----- Judgement -----
+# # # #             judgement_data = parsed.get("jino_judgement", {})
+# # # #             if isinstance(judgement_data, dict) and "judgement" in judgement_data:
+# # # #                 judgement_entry = {
+# # # #                     "timestamp": datetime.utcnow().isoformat(),
+# # # #                     "category": judgement_data.get("category", "emotional_state"),
+# # # #                     "judgement": judgement_data.get("judgement"),
+# # # #                     "confidence": judgement_data.get("confidence", "medium")
+# # # #                 }
+
+# # # #                 save_judgement(user_id, chat_id, judgement_entry)
+# # # #                 print("🧠 [JINO Judgement Saved]:")
+# # # #                 print(json.dumps(judgement_entry, indent=2))
+# # # #             else:
+# # # #                 print("🫥 No valid jino_judgement returned.")
+
+# # # #             # ----- Convo Summary (NEW STUFF) -----
+# # # #             convo_summary = parsed.get("jino_convo_summary", {})
+# # # #             if isinstance(convo_summary, dict) and "summary" in convo_summary:
+# # # #                 convo_summary_output = convo_summary
+# # # #                 print("🧾 [Convo Summary Extracted]:")
+# # # #                 print(json.dumps(convo_summary_output, indent=2))
+# # # #             else:
+# # # #                 print("⚠️ No valid convo summary found or malformed.")
+
 # # # #             final_result = result
 # # # #             final_model = model
-
-# # # #             if memory_updated:
-# # # #                 save_memory(user_id, updated_memory)
-# # # #                 print("✅ Memory updated and saved.")
-# # # #             else:
-# # # #                 print("ℹ️ No new info extracted. Keeping existing memory intact.")
-
-# # # #             print("🧠 [Extracted from model]:")
-# # # #             print(json.dumps(extracted_json, indent=2))
-# # # #             print("🧠 [Updated JINO Memory]:")
-# # # #             print(json.dumps(updated_memory, indent=2))
 # # # #             break
 
-# # # #         except json.JSONDecodeError as jde:
-# # # #             print(f"❌ JSON decode failed for model {model}: {str(jde)}")
-# # # #             continue
 # # # #         except Exception as e:
-# # # #             print(f"💥 Unexpected error for model {model}: {str(e)}")
+# # # #             print(f"💥 Unexpected error from {model}: {str(e)}")
 # # # #             continue
 
-# # # #     # Fallback: if everything failed, just use existing memory
-# # # #     if updated_memory is None:
-# # # #         print("🚫 All models failed. Returning existing memory as fallback.")
-# # # #         updated_memory = existing_memory
-
-# # # #     return jsonify({
+# # # #     # Save memory and judgement to local storage on frontend side (replace it here for your frontend code)
+# # # #     response = {
 # # # #         "extracted": updated_memory,
-# # # #         "judgement": {},  # Still reserved for sarcasm later
+# # # #         "judgement": judgement_entry,
+# # # #         "convo_summary": convo_summary_output,
 # # # #         "tokens_used": final_result.get("tokens", {}) if final_result else {},
-# # # #         "model_used": final_model if final_model else "none",
-# # # #         "memory_updated": memory_updated  # ✅ this is new
-# # # #     }), 200
+# # # #         "model_used": final_model or "none",
+# # # #         "memory_updated": memory_updated
+# # # #     }
+
+# # # #     return jsonify(response), 200
+
 
 
 # # # from flask import Blueprint, request, jsonify
 # # # from app.utils.openrouter_client import call_openrouter
-# # # from app.utils.memory import merge_memory, save_memory
+# # # from app.utils.memory import merge_memory, save_memory, save_judgement
 # # # from datetime import datetime
 # # # import json
 # # # import re
@@ -131,104 +371,124 @@
 # # # def extract():
 # # #     user_input = request.json.get('message', '')
 # # #     existing_memory = request.json.get('memory', {})
+# # #     convo_summary_list = request.json.get('convo_summary', [])  # 🧠 New input
 # # #     user_id = request.json.get('user_id', None)
-# # #     chat_id = request.json.get('chat_id', 'chat_1')  # fallback if not given
+# # #     chat_id = request.json.get('chat_id', 'chat_1')
 
 # # #     if not user_input:
-# # #         print("❌ No 'message' found in request body")
 # # #         return jsonify({"error": "Missing 'message' in request body"}), 400
 
 # # #     if not user_id:
-# # #         print("❌ No 'user_id' provided")
 # # #         return jsonify({"error": "Missing 'user_id' in request"}), 400
 
 # # #     print("===== [/extract ROUTE HIT] =====")
 # # #     print(f"💬 User message: {user_input}")
-# # #     print("📂 Existing memory (before merge):")
-# # #     print(json.dumps(existing_memory, indent=2))
 
-# # #     prompt = f"""
+# # #     # --- Base prompt for memory + judgement extraction ---
+# # #     base_prompt = f"""
 # # # You are extracting personal facts **about the user** from their message.
 
-# # # Your job:
-# # # - Convert useful facts into a dynamic, flat JSON object.
-# # # - The keys should be auto-generated based on the content. For example:
-# # #   - "I’m moving to Bangalore next week" → {{"city": "Bangalore"}}
-# # #   - "It’s my 23rd birthday today!" → {{"age": "23"}}
-# # #   - "I'm jobless again lol" → {{"job_status": "unemployed"}}
-# # # - You may reuse or update previous facts if there's a new update (e.g., new age, new city, new job).
-# # # - DO NOT include any facts about the AI (Jino) itself.
-# # # - DO NOT add commentary or explanation. Just the JSON.
-# # # - Be smart about sarcasm and tone, but don’t make things up.
+# # # You must return a **single JSON object** that contains these keys:
 
-# # # Additionally, if you can judge the **user's emotional state or personality** based on this message, return a second JSON object called "judgement" like this:
+# # # 1. "jino_memory" → factual memory only (like name, city, job, etc.)
+# # # 2. "jino_judgement" → emotional memory (like moods, opinions, personality insight)
 
-# # # "judgement": {{
-# # #   "judgement": "User seems very hopeful despite facing tough times.",
-# # #   "category": "emotional_state",
-# # #   "confidence": "medium"
+# # # If provided, summarize the conversation and include:
+# # # 3. "jino_convo_summary" → Summary of last interactions + latest timestamp
+
+# # # Format (MUST be one single valid JSON object):
+# # # {{
+# # #   "jino_memory": {{
+# # #     "key1": "value1"
+# # #   }},
+# # #   "jino_judgement": {{
+# # #     "judgement": "User seems frustrated but optimistic.",
+# # #     "category": "emotional_state",
+# # #     "confidence": "high"
+# # #   }},
+# # #   "jino_convo_summary": {{
+# # #     "summary": "Brief but rich summary of last few interactions.",
+# # #     "latest_timestamp": "2025-04-20T04:32:08Z"
+# # #   }}
 # # # }}
 
-# # # Only include "judgement" if it's meaningful or emotionally insightful.
+# # # DO NOT return multiple JSON blocks.
+# # # DO NOT wrap with markdown or explanation. Just pure valid JSON.
 
 # # # User message: "{user_input}"
 # # # """.strip()
 
+# # #     # --- If convo summary list is provided, append this to prompt ---
+# # #     if convo_summary_list and isinstance(convo_summary_list, list):
+# # #         convo_summary_prompt = "\n\nConversation history:\n"
+# # #         for entry in convo_summary_list[-6:]:  # FIFO – just last 6 to keep it snappy
+# # #             msg = entry.get("message", "")
+# # #             ts = entry.get("timestamp", "")
+# # #             sender = entry.get("sender", "user")
+# # #             role = "User" if sender == "user" else "Jino"
+# # #             convo_summary_prompt += f"{role} ({ts}): {msg}\n"
+
+# # #         base_prompt += convo_summary_prompt
+
 # # #     models = [
-# # #         "deepseek/deepseek-r1:free",
 # # #         "mistralai/mixtral-8x7b-instruct"
 # # #     ]
 
-# # #     updated_memory = None
-# # #     extracted_json = None
-# # #     final_result = None
 # # #     final_model = None
+# # #     final_result = None
 # # #     memory_updated = False
+# # #     updated_memory = existing_memory
 # # #     judgement_entry = {}
+# # #     convo_summary_output = {}
 
 # # #     for model in models:
 # # #         try:
 # # #             print(f"⚙️ Trying model: {model}")
 # # #             result = call_openrouter(
 # # #                 model=model,
-# # #                 messages=[{"role": "user", "content": prompt}],
-# # #                 temperature=0,
-# # #                 max_tokens=400
+# # #                 messages=[{"role": "user", "content": base_prompt}],
+# # #                 temperature=0.3,
+# # #                 max_tokens=500
 # # #             )
 
 # # #             raw_response = result.get("content", "").strip()
-# # #             print(f"📦 Raw model response: {raw_response}")
+# # #             print(f"📦 Raw model response:\n{raw_response}")
 
-# # #             cleaned = re.sub(r"```json|```", "", raw_response).strip()
+# # #             # Fix common formatting junk
+# # #             cleaned = raw_response.replace("\\_", "_")
+# # #             cleaned = re.sub(r"```json|```", "", cleaned).strip()
+
 # # #             if not cleaned:
-# # #                 print("⚠️ Cleaned response is empty. Trying next model...")
+# # #                 print("❌ Cleaned response is empty!")
 # # #                 continue
 
-# # #             parsed = json.loads(cleaned)
-
-# # #             if not parsed or not isinstance(parsed, dict):
-# # #                 print("⚠️ Response not a valid dict. Trying next model...")
+# # #             try:
+# # #                 parsed = json.loads(cleaned)
+# # #             except json.JSONDecodeError as jde:
+# # #                 print(f"❌ JSON decode failed after cleanup: {str(jde)}")
+# # #                 print("🧽 Cleaned content that failed:\n", cleaned)
 # # #                 continue
 
-# # #             # Separate memory and judgement if both exist
-# # #             memory_data = {k: v for k, v in parsed.items() if k != "judgement"}
-# # #             judgement_data = parsed.get("judgement", None)
+# # #             if not isinstance(parsed, dict):
+# # #                 print("⚠️ Model returned non-dict JSON. Skipping.")
+# # #                 continue
 
-# # #             if memory_data:
+# # #             # ----- Memory -----
+# # #             memory_data = parsed.get("jino_memory", {})
+# # #             if isinstance(memory_data, dict) and memory_data:
 # # #                 updated_memory = merge_memory(existing_memory, memory_data)
 # # #                 memory_updated = updated_memory != existing_memory
 # # #                 if memory_updated:
 # # #                     save_memory(user_id, updated_memory)
-# # #                     print("✅ Memory updated and saved.")
+# # #                     print("✅ jino_memory updated and saved.")
 # # #                 else:
-# # #                     print("ℹ️ No new info extracted. Keeping existing memory intact.")
-# # #                 print("🧠 [Extracted from model]:")
-# # #                 print(json.dumps(memory_data, indent=2))
-# # #                 print("🧠 [Updated JINO Memory]:")
-# # #                 print(json.dumps(updated_memory, indent=2))
+# # #                     print("ℹ️ No new factual memory changes.")
+# # #             else:
+# # #                 print("🫥 No valid jino_memory returned.")
 
-# # #             # Handle judgement memory
-# # #             if judgement_data and isinstance(judgement_data, dict) and "judgement" in judgement_data:
+# # #             # ----- Judgement -----
+# # #             judgement_data = parsed.get("jino_judgement", {})
+# # #             if isinstance(judgement_data, dict) and "judgement" in judgement_data:
 # # #                 judgement_entry = {
 # # #                     "timestamp": datetime.utcnow().isoformat(),
 # # #                     "category": judgement_data.get("category", "emotional_state"),
@@ -236,43 +496,44 @@
 # # #                     "confidence": judgement_data.get("confidence", "medium")
 # # #                 }
 
-# # #                 # Inject into updated_memory under jino_judgement
-# # #                 updated_memory.setdefault("jino_judgement", {})
-# # #                 updated_memory["jino_judgement"].setdefault(chat_id, [])
-# # #                 updated_memory["jino_judgement"][chat_id].append(judgement_entry)
-# # #                 save_memory(user_id, updated_memory)  # Save updated judgement too
-
-# # #                 print("🧠 [JINO Judgement Added]:")
+# # #                 save_judgement(user_id, chat_id, judgement_entry)
+# # #                 print("🧠 [JINO Judgement Saved]:")
 # # #                 print(json.dumps(judgement_entry, indent=2))
 # # #             else:
-# # #                 print("🫥 No judgement returned or it's empty.")
+# # #                 print("🫥 No valid jino_judgement returned.")
+
+# # #             # ----- Convo Summary (NEW STUFF) -----
+# # #             convo_summary = parsed.get("jino_convo_summary", {})
+# # #             if isinstance(convo_summary, dict) and "summary" in convo_summary:
+# # #                 convo_summary_output = convo_summary
+# # #                 print("🧾 [Convo Summary Extracted]:")
+# # #                 print(json.dumps(convo_summary_output, indent=2))
+# # #             else:
+# # #                 print("⚠️ No valid convo summary found or malformed.")
 
 # # #             final_result = result
 # # #             final_model = model
 # # #             break
 
-# # #         except json.JSONDecodeError as jde:
-# # #             print(f"❌ JSON decode failed for model {model}: {str(jde)}")
-# # #             continue
 # # #         except Exception as e:
-# # #             print(f"💥 Unexpected error for model {model}: {str(e)}")
+# # #             print(f"💥 Unexpected error from {model}: {str(e)}")
 # # #             continue
 
-# # #     if updated_memory is None:
-# # #         print("🚫 All models failed. Returning existing memory as fallback.")
-# # #         updated_memory = existing_memory
-
-# # #     return jsonify({
+# # #     response = {
 # # #         "extracted": updated_memory,
 # # #         "judgement": judgement_entry,
+# # #         "convo_summary": convo_summary_output,
 # # #         "tokens_used": final_result.get("tokens", {}) if final_result else {},
-# # #         "model_used": final_model if final_model else "none",
+# # #         "model_used": final_model or "none",
 # # #         "memory_updated": memory_updated
-# # #     }), 200
+# # #     }
+
+# # #     return jsonify(response), 200
+
 
 # # from flask import Blueprint, request, jsonify
 # # from app.utils.openrouter_client import call_openrouter
-# # from app.utils.memory import merge_memory, save_memory
+# # from app.utils.memory import merge_memory, save_memory, save_judgement
 # # from datetime import datetime
 # # import json
 # # import re
@@ -283,6 +544,7 @@
 # # def extract():
 # #     user_input = request.json.get('message', '')
 # #     existing_memory = request.json.get('memory', {})
+# #     convo_summary_list = request.json.get('convo_summary', [])  # 🧠 New input
 # #     user_id = request.json.get('user_id', None)
 # #     chat_id = request.json.get('chat_id', 'chat_1')
 
@@ -295,34 +557,52 @@
 # #     print("===== [/extract ROUTE HIT] =====")
 # #     print(f"💬 User message: {user_input}")
 
-# #     prompt = f"""
+# #     # --- Base prompt for memory + judgement extraction ---
+# #     base_prompt = f"""
 # # You are extracting personal facts **about the user** from their message.
 
-# # Return two separate JSON blocks:
+# # You must return a **single JSON object** that contains these keys:
 
-# # 1. "jino_memory": factual memory only (like name, city, job, etc.)
-# # 2. "jino_judgement": emotional memory (like moods, opinions, personality insight)
+# # 1. "jino_memory" → factual memory only (like name, city, job, etc.)
+# # 2. "jino_judgement" → emotional memory (like moods, opinions, personality insight)
 
-# # Format:
+# # If provided, summarize the conversation and include:
+# # 3. "jino_convo_summary" → Summary of last interactions + latest timestamp
+
+# # Format (MUST be one single valid JSON object):
 # # {{
 # #   "jino_memory": {{
-# #     "key1": "value1",
-# #     ...
+# #     "key1": "value1"
 # #   }},
 # #   "jino_judgement": {{
 # #     "judgement": "User seems frustrated but optimistic.",
 # #     "category": "emotional_state",
 # #     "confidence": "high"
+# #   }},
+# #   "jino_convo_summary": {{
+# #     "summary": "Brief but rich summary of last few interactions.",
 # #   }}
 # # }}
 
-# # DO NOT wrap with markdown or explanation. Just pure JSON.
+# # DO NOT return multiple JSON blocks.
+# # DO NOT wrap with markdown or explanation. Just pure valid JSON.
 
 # # User message: "{user_input}"
 # # """.strip()
 
+# #     # --- Append convo history if provided ---
+# #     if convo_summary_list and isinstance(convo_summary_list, list):
+# #         convo_summary_prompt = "\n\nRecent Conversation History:\n"
+# #         for entry in convo_summary_list[-6:]:  # last 6 messages max
+# #             msg = entry.get("message", "")
+# #             ts = entry.get("timestamp", "")
+# #             sender = entry.get("sender", "user")
+# #             role = "User" if sender == "user" else "Jino"
+# #             convo_summary_prompt += f"{role} ({ts}): {msg}\n"
+
+# #         base_prompt += convo_summary_prompt
+
 # #     models = [
-# #         # "deepseek/deepseek-r1:free",
 # #         "mistralai/mixtral-8x7b-instruct"
 # #     ]
 
@@ -331,31 +611,42 @@
 # #     memory_updated = False
 # #     updated_memory = existing_memory
 # #     judgement_entry = {}
+# #     convo_summary_output = {}
 
 # #     for model in models:
 # #         try:
 # #             print(f"⚙️ Trying model: {model}")
 # #             result = call_openrouter(
 # #                 model=model,
-# #                 messages=[{"role": "user", "content": prompt}],
+# #                 messages=[{"role": "user", "content": base_prompt}],
 # #                 temperature=0.3,
-# #                 max_tokens=400
+# #                 max_tokens=500
 # #             )
 
 # #             raw_response = result.get("content", "").strip()
 # #             print(f"📦 Raw model response:\n{raw_response}")
 
-# #             cleaned = re.sub(r"```json|```", "", raw_response).strip()
-# #             parsed = json.loads(cleaned)
+# #             # Fix common formatting junk
+# #             cleaned = raw_response.replace("\\_", "_")
+# #             cleaned = re.sub(r"```json|```", "", cleaned).strip()
+
+# #             if not cleaned:
+# #                 print("❌ Cleaned response is empty!")
+# #                 continue
+
+# #             try:
+# #                 parsed = json.loads(cleaned)
+# #             except json.JSONDecodeError as jde:
+# #                 print(f"❌ JSON decode failed after cleanup: {str(jde)}")
+# #                 print("🧽 Cleaned content that failed:\n", cleaned)
+# #                 continue
 
 # #             if not isinstance(parsed, dict):
 # #                 print("⚠️ Model returned non-dict JSON. Skipping.")
 # #                 continue
 
+# #             # ----- Memory -----
 # #             memory_data = parsed.get("jino_memory", {})
-# #             judgement_data = parsed.get("jino_judgement", {})
-
-# #             # ----- Save factual memory -----
 # #             if isinstance(memory_data, dict) and memory_data:
 # #                 updated_memory = merge_memory(existing_memory, memory_data)
 # #                 memory_updated = updated_memory != existing_memory
@@ -367,50 +658,52 @@
 # #             else:
 # #                 print("🫥 No valid jino_memory returned.")
 
-# #             # ----- Save judgement memory -----
+# #             # ----- Judgement -----
+# #             judgement_data = parsed.get("jino_judgement", {})
 # #             if isinstance(judgement_data, dict) and "judgement" in judgement_data:
 # #                 judgement_entry = {
-# #                     "timestamp": datetime.utcnow().isoformat(),
 # #                     "category": judgement_data.get("category", "emotional_state"),
 # #                     "judgement": judgement_data.get("judgement"),
 # #                     "confidence": judgement_data.get("confidence", "medium")
 # #                 }
 
-# #                 updated_memory.setdefault("jino_judgement", {})
-# #                 updated_memory["jino_judgement"].setdefault(chat_id, [])
-# #                 updated_memory["jino_judgement"][chat_id].append(judgement_entry)
-# #                 save_memory(user_id, updated_memory)
-
-# #                 print("🧠 [JINO Judgement Added]:")
+# #                 save_judgement(user_id, chat_id, judgement_entry)
+# #                 print("🧠 [JINO Judgement Saved]:")
 # #                 print(json.dumps(judgement_entry, indent=2))
 # #             else:
 # #                 print("🫥 No valid jino_judgement returned.")
+
+# #             # ----- Convo Summary (NEW STUFF) -----
+# #             convo_summary = parsed.get("jino_convo_summary", {})
+# #             if isinstance(convo_summary, dict) and "summary" in convo_summary:
+# #                 convo_summary_output = convo_summary
+# #                 print("🧾 [Convo Summary Extracted]:")
+# #                 print(json.dumps(convo_summary_output, indent=2))
+# #             else:
+# #                 print("⚠️ No valid convo summary found or malformed.")
 
 # #             final_result = result
 # #             final_model = model
 # #             break
 
-# #         except json.JSONDecodeError as jde:
-# #             print(f"❌ JSON decode failed for {model}: {str(jde)}")
-# #             continue
 # #         except Exception as e:
 # #             print(f"💥 Unexpected error from {model}: {str(e)}")
 # #             continue
 
-# #     return jsonify({
+# #     response = {
 # #         "extracted": updated_memory,
 # #         "judgement": judgement_entry,
+# #         "convo_summary": convo_summary_output,
 # #         "tokens_used": final_result.get("tokens", {}) if final_result else {},
 # #         "model_used": final_model or "none",
 # #         "memory_updated": memory_updated
-# #     }), 200
+# #     }
 
-
-
+# #     return jsonify(response), 200
 
 # from flask import Blueprint, request, jsonify
 # from app.utils.openrouter_client import call_openrouter
-# from app.utils.memory import merge_memory, save_memory
+# from app.utils.memory import merge_memory, save_memory, save_judgement
 # from datetime import datetime
 # import json
 # import re
@@ -421,9 +714,11 @@
 # def extract():
 #     user_input = request.json.get('message', '')
 #     existing_memory = request.json.get('memory', {})
+#     convo_summary_list = request.json.get('convo_summary', [])  # 🧠 New input
 #     user_id = request.json.get('user_id', None)
 #     chat_id = request.json.get('chat_id', 'chat_1')
 
+#     # Validate user input and user_id
 #     if not user_input:
 #         return jsonify({"error": "Missing 'message' in request body"}), 400
 
@@ -433,31 +728,50 @@
 #     print("===== [/extract ROUTE HIT] =====")
 #     print(f"💬 User message: {user_input}")
 
-#     prompt = f"""
+#     # --- Base prompt for memory + judgement extraction ---
+#     base_prompt = f"""
 # You are extracting personal facts **about the user** from their message.
 
-# Return two separate JSON blocks:
+# You must return a **single JSON object** that contains these keys:
 
-# 1. "jino_memory": factual memory only (like name, city, job, etc.)
-# 2. "jino_judgement": emotional memory (like moods, opinions, personality insight)
+# 1. "jino_memory" → factual memory only (like name, city, job, etc.)
+# 2. "jino_judgement" → emotional memory (like moods, opinions, personality insight)
 
-# Format:
+# If provided, summarize the conversation and include:
+# 3. "jino_convo_summary" → Summary of last interactions + latest timestamp
+
+# Format (MUST be one single valid JSON object):
 # {{
 #   "jino_memory": {{
-#     "key1": "value1",
-#     ...
+#     "key1": "value1"
 #   }},
 #   "jino_judgement": {{
 #     "judgement": "User seems frustrated but optimistic.",
 #     "category": "emotional_state",
 #     "confidence": "high"
+#   }},
+#   "jino_convo_summary": {{
+#     "summary": "Brief but rich summary of last few interactions.",
 #   }}
 # }}
 
-# DO NOT wrap with markdown or explanation. Just pure JSON.
+# DO NOT return multiple JSON blocks.
+# DO NOT wrap with markdown or explanation. Just pure valid JSON.
 
 # User message: "{user_input}"
 # """.strip()
+
+#     # --- Append convo history if provided ---
+#     if convo_summary_list and isinstance(convo_summary_list, list):
+#         convo_summary_prompt = "\n\nRecent Conversation History:\n"
+#         for entry in convo_summary_list[-6:]:  # last 6 messages max
+#             msg = entry.get("message", "")
+#             ts = entry.get("timestamp", "")
+#             sender = entry.get("sender", "user")
+#             role = "User" if sender == "user" else "Jino"
+#             convo_summary_prompt += f"{role} ({ts}): {msg}\n"
+
+#         base_prompt += convo_summary_prompt
 
 #     models = [
 #         "mistralai/mixtral-8x7b-instruct"
@@ -468,23 +782,33 @@
 #     memory_updated = False
 #     updated_memory = existing_memory
 #     judgement_entry = {}
+#     convo_summary_output = {}
 
 #     for model in models:
 #         try:
 #             print(f"⚙️ Trying model: {model}")
 #             result = call_openrouter(
 #                 model=model,
-#                 messages=[{"role": "user", "content": prompt}],
+#                 messages=[{"role": "user", "content": base_prompt}],
 #                 temperature=0.3,
-#                 max_tokens=400
+#                 max_tokens=500
 #             )
 
 #             raw_response = result.get("content", "").strip()
 #             print(f"📦 Raw model response:\n{raw_response}")
 
-#             # Fix common AI formatting issues
+#             # Fix common formatting junk
 #             cleaned = raw_response.replace("\\_", "_")
 #             cleaned = re.sub(r"```json|```", "", cleaned).strip()
+
+#             # Ensure the response ends with a closing brace
+#             if not raw_output.strip().endswith('}'):
+#                 raw_response += '}'
+
+
+#             if not cleaned:
+#                 print("❌ Cleaned response is empty!")
+#                 continue
 
 #             try:
 #                 parsed = json.loads(cleaned)
@@ -497,10 +821,8 @@
 #                 print("⚠️ Model returned non-dict JSON. Skipping.")
 #                 continue
 
+#             # ----- Memory -----
 #             memory_data = parsed.get("jino_memory", {})
-#             judgement_data = parsed.get("jino_judgement", {})
-
-#             # ----- Save factual memory -----
 #             if isinstance(memory_data, dict) and memory_data:
 #                 updated_memory = merge_memory(existing_memory, memory_data)
 #                 memory_updated = updated_memory != existing_memory
@@ -512,24 +834,29 @@
 #             else:
 #                 print("🫥 No valid jino_memory returned.")
 
-#             # ----- Save judgement memory -----
+#             # ----- Judgement -----
+#             judgement_data = parsed.get("jino_judgement", {})
 #             if isinstance(judgement_data, dict) and "judgement" in judgement_data:
 #                 judgement_entry = {
-#                     "timestamp": datetime.utcnow().isoformat(),
 #                     "category": judgement_data.get("category", "emotional_state"),
 #                     "judgement": judgement_data.get("judgement"),
 #                     "confidence": judgement_data.get("confidence", "medium")
 #                 }
 
-#                 updated_memory.setdefault("jino_judgement", {})
-#                 updated_memory["jino_judgement"].setdefault(chat_id, [])
-#                 updated_memory["jino_judgement"][chat_id].append(judgement_entry)
-#                 save_memory(user_id, updated_memory)
-
-#                 print("🧠 [JINO Judgement Added]:")
+#                 save_judgement(user_id, chat_id, judgement_entry)
+#                 print("🧠 [JINO Judgement Saved]:")
 #                 print(json.dumps(judgement_entry, indent=2))
 #             else:
 #                 print("🫥 No valid jino_judgement returned.")
+
+#             # ----- Convo Summary (NEW STUFF) -----
+#             convo_summary = parsed.get("jino_convo_summary", {})
+#             if isinstance(convo_summary, dict) and "summary" in convo_summary:
+#                 convo_summary_output = convo_summary
+#                 print("🧾 [Convo Summary Extracted]:")
+#                 print(json.dumps(convo_summary_output, indent=2))
+#             else:
+#                 print("⚠️ No valid convo summary found or malformed.")
 
 #             final_result = result
 #             final_model = model
@@ -539,14 +866,17 @@
 #             print(f"💥 Unexpected error from {model}: {str(e)}")
 #             continue
 
-#     return jsonify({
+#     # Response structure to return
+#     response = {
 #         "extracted": updated_memory,
 #         "judgement": judgement_entry,
+#         "convo_summary": convo_summary_output,
 #         "tokens_used": final_result.get("tokens", {}) if final_result else {},
 #         "model_used": final_model or "none",
 #         "memory_updated": memory_updated
-#     }), 200
+#     }
 
+#     return jsonify(response), 200
 from flask import Blueprint, request, jsonify
 from app.utils.openrouter_client import call_openrouter
 from app.utils.memory import merge_memory, save_memory, save_judgement
@@ -559,28 +889,33 @@ extract_bp = Blueprint('extract', __name__)
 @extract_bp.route('/extract', methods=['POST'])
 def extract():
     user_input = request.json.get('message', '')
-    existing_memory = request.json.get('memory', {})
+    existing_memory = request.json.get('memory', {}) or {}
+    convo_summary_list = request.json.get('convo_summary', [])  # 🧠 New input
     user_id = request.json.get('user_id', None)
     chat_id = request.json.get('chat_id', 'chat_1')
 
+    # Validate inputs
     if not user_input:
         return jsonify({"error": "Missing 'message' in request body"}), 400
-
     if not user_id:
         return jsonify({"error": "Missing 'user_id' in request"}), 400
 
     print("===== [/extract ROUTE HIT] =====")
     print(f"💬 User message: {user_input}")
 
-    prompt = f"""
+    # --- Build prompt ---
+    base_prompt = f"""
 You are extracting personal facts **about the user** from their message.
 
-Return two separate JSON blocks:
+You must return a **single JSON object** that contains these keys:
 
-1. "jino_memory": factual memory only (like name, city, job, etc.)
-2. "jino_judgement": emotional memory (like moods, opinions, personality insight)
+1. "jino_memory" → factual memory only (like name, city, job, etc.)
+2. "jino_judgement" → emotional memory (like moods, opinions, personality insight)
 
-Format:
+If provided, summarize the conversation and include:
+3. "jino_convo_summary" → Summary of last interactions + latest timestamp
+
+Format (MUST be one single valid JSON object):
 {{
   "jino_memory": {{
     "key1": "value1"
@@ -589,94 +924,137 @@ Format:
     "judgement": "User seems frustrated but optimistic.",
     "category": "emotional_state",
     "confidence": "high"
+  }},
+  "jino_convo_summary": {{
+    "summary": "Brief but rich summary of last few interactions.",
+    "latest_timestamp": "2025-04-20T04:32:08Z"
   }}
 }}
 
-DO NOT wrap with markdown or explanation. Just pure JSON.
+DO NOT return multiple JSON blocks.
+DO NOT wrap with markdown or explanation. Just pure valid JSON.
 
 User message: "{user_input}"
 """.strip()
 
-    models = [
-        "mistralai/mixtral-8x7b-instruct"
-    ]
+    # Append recent convo history if available
+    if isinstance(convo_summary_list, list) and convo_summary_list:
+        base_prompt += "\n\nRecent Conversation History:\n"
+        for entry in convo_summary_list[-6:]:
+            ts = entry.get("timestamp", "")
+            msg = entry.get("message", "")
+            role = "User" if entry.get("sender", "user") == "user" else "Jino"
+            base_prompt += f"{role} ({ts}): {msg}\n"
+
+    models = ["mistralai/mixtral-8x7b-instruct"]
 
     final_model = None
     final_result = None
     memory_updated = False
-    updated_memory = existing_memory
+    updated_memory = existing_memory.copy()
     judgement_entry = {}
+    convo_summary_output = {}
 
     for model in models:
         try:
             print(f"⚙️ Trying model: {model}")
             result = call_openrouter(
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": base_prompt}],
                 temperature=0.3,
-                max_tokens=400
+                max_tokens=500
             )
 
-            raw_response = result.get("content", "").strip()
-            print(f"📦 Raw model response:\n{raw_response}")
+            raw = result.get("content", "").strip()
+            print("📦 Raw model response:\n", raw)
 
-            # Fix common AI formatting issues
-            cleaned = raw_response.replace("\\_", "_")
-            cleaned = re.sub(r"```json|```", "", cleaned).strip()
+            # Cleanup formatting
+            cleaned = re.sub(r"```json|```", "", raw).replace("\\_", "_").strip()
+            if not cleaned.endswith("}"):
+                print("🔧 Appending missing '}'")
+                cleaned += "}"
+            print("🔍 Cleaned JSON:\n", cleaned)
 
-            try:
-                parsed = json.loads(cleaned)
-            except json.JSONDecodeError as jde:
-                print(f"❌ JSON decode failed after cleanup: {str(jde)}")
-                print("🧽 Cleaned content that failed:\n", cleaned)
-                continue
-
+            parsed = json.loads(cleaned)
             if not isinstance(parsed, dict):
-                print("⚠️ Model returned non-dict JSON. Skipping.")
+                print("⚠️ Parsed JSON not an object, skipping.")
                 continue
 
-            memory_data = parsed.get("jino_memory", {})
-            judgement_data = parsed.get("jino_judgement", {})
+            # ----- Memory Handling -----
+            memory_data = parsed.get("jino_memory", {}) or {}
 
-            # ----- Save factual memory -----
-            if isinstance(memory_data, dict) and memory_data:
-                updated_memory = merge_memory(existing_memory, memory_data)
-                memory_updated = updated_memory != existing_memory
-                if memory_updated:
-                    save_memory(user_id, updated_memory)
-                    print("✅ jino_memory updated and saved.")
+            # Custom name logic:
+            new_name = memory_data.get("name", "").strip()
+            old_name = existing_memory.get("name", "").strip()
+            if new_name and old_name:
+                new_lower, old_lower = new_name.lower(), old_name.lower()
+                # expansion case: old_name → "afnan", new_name → "afnan ahmed"
+                if new_lower.startswith(old_lower) and new_lower != old_lower:
+                    print("ℹ️ Detected name expansion; moving to full_name")
+                    memory_data.pop("name", None)
+                    memory_data["full_name"] = new_name
+                # contraction case: old_name → "afnan ahmed", new_name → "afnan"
+                elif old_lower.startswith(new_lower) and new_lower != old_lower:
+                    print("ℹ️ Detected name contraction; dropping new_name")
+                    memory_data.pop("name", None)
+                # completely different: replace
                 else:
-                    print("ℹ️ No new factual memory changes.")
-            else:
-                print("🫥 No valid jino_memory returned.")
+                    print("ℹ️ Detected completely new name; replacing 'name'")
+                    memory_data["name"] = new_name
 
-            # ----- Save judgement memory -----
-            if isinstance(judgement_data, dict) and "judgement" in judgement_data:
+            # Merge only if there’s at least one valid key
+            if isinstance(memory_data, dict) and memory_data:
+                merged = merge_memory(updated_memory, memory_data)
+                if merged != updated_memory:
+                    updated_memory = merged
+                    memory_updated = True
+                    save_memory(user_id, updated_memory)
+                    print("✅ jino_memory merged & saved:", updated_memory)
+                else:
+                    print("ℹ️ Memory present but no actual changes after merge")
+            else:
+                print("🫥 No valid jino_memory to merge")
+
+            # ----- Judgement -----
+            j_data = parsed.get("jino_judgement", {}) or {}
+            if isinstance(j_data, dict) and "judgement" in j_data:
                 judgement_entry = {
                     "timestamp": datetime.utcnow().isoformat(),
-                    "category": judgement_data.get("category", "emotional_state"),
-                    "judgement": judgement_data.get("judgement"),
-                    "confidence": judgement_data.get("confidence", "medium")
+                    "category": j_data.get("category", "emotional_state"),
+                    "judgement": j_data["judgement"],
+                    "confidence": j_data.get("confidence", "medium")
                 }
-
                 save_judgement(user_id, chat_id, judgement_entry)
-                print("🧠 [JINO Judgement Saved]:")
-                print(json.dumps(judgement_entry, indent=2))
+                print("🧠 jino_judgement saved:", judgement_entry)
             else:
-                print("🫥 No valid jino_judgement returned.")
+                print("🫥 No valid jino_judgement returned")
 
-            final_result = result
+            # ----- Convo Summary -----
+            cs = parsed.get("jino_convo_summary", {}) or {}
+            if isinstance(cs, dict) and "summary" in cs:
+                if "latest_timestamp" not in cs:
+                    cs["latest_timestamp"] = datetime.utcnow().isoformat()
+                convo_summary_output = cs
+                print("🧾 jino_convo_summary extracted:", cs)
+            else:
+                print("⚠️ No valid jino_convo_summary found")
+
             final_model = model
+            final_result = result
             break
 
         except Exception as e:
-            print(f"💥 Unexpected error from {model}: {str(e)}")
+            print(f"💥 Unexpected error in {model}:", e)
             continue
 
-    return jsonify({
+    response = {
         "extracted": updated_memory,
         "judgement": judgement_entry,
+        "convo_summary": convo_summary_output,
         "tokens_used": final_result.get("tokens", {}) if final_result else {},
         "model_used": final_model or "none",
         "memory_updated": memory_updated
-    }), 200
+    }
+
+    print("📤 /extract response payload:", response)
+    return jsonify(response), 200

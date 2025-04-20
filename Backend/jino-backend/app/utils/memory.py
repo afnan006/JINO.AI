@@ -90,6 +90,8 @@
 #     return summary.strip()
 import json
 import os
+import copy
+
 
 def clean_invalid_fields(memory):
     cleaned_memory = {}
@@ -98,15 +100,30 @@ def clean_invalid_fields(memory):
             cleaned_memory[key] = value
     return cleaned_memory
 
+# def merge_memory(old, new):
+#     if not isinstance(old, dict):
+#         old = {}
+#     if not isinstance(new, dict):
+#         new = {}
+    
+#     new = clean_invalid_fields(new)
+#     old.update(new)
+#     return old
+
 def merge_memory(old, new):
     if not isinstance(old, dict):
         old = {}
     if not isinstance(new, dict):
         new = {}
-    
+
     new = clean_invalid_fields(new)
-    old.update(new)
-    return old
+    
+    # Make a deep copy to prevent mutation of original
+    merged = copy.deepcopy(old)
+    merged.update(new)
+    
+    return merged
+
 
 def deep_merge_memory(existing_memory, new_data):
     if not isinstance(existing_memory, dict):

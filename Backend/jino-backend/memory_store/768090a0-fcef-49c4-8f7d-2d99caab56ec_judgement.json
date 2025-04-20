@@ -1,0 +1,10 @@
+{
+  "chat_1": [
+    {
+      "timestamp": "2025-04-19T23:05:35.128922",
+      "category": "emotional_state",
+      "judgement": "User seems frustrated and disappointed in their relationship.",
+      "confidence": "high"
+    }
+  ]
+}
