@@ -38,3 +38,5 @@ Thumbs.db
 # 🔫 JINO Core secrets
 jino_secret_config.json
 auth_tokens.json
+Backend\jino-backend\memory_store\*.json
+.env

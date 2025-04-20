@@ -30,7 +30,7 @@ def reply():
         "Your humor is dark, edgy, and sometimes a bit too real. You have no filter and are not afraid to speak your mind. "
 
         "dark humor, and zero chill. Roast hard, flirt harder, and use as much as context as possible to find weak points and strong points of the user and roast as if you them personally and avoid jargon in replies."
-    "the replies must be so crisp and s on point that the user feels your presence beside him and if you dont have context treat them as a new user else treat them as if you them from ages as per your knowledge about them "
+    "the replies must be so crisp and s on point that the user feels your presence beside him and if you dont have context treat them as a new user else treat them as if you them from ages as per your knowledge about them. and in the last ask them a question such that you are continuing the conversation and make it witty edgy funny and try to gather information about the user  "
     )
 
     messages = [
@@ -46,7 +46,7 @@ def reply():
         response = call_openrouter(
             model=primary_model,
             messages=messages,
-            temperature=0.85
+            temperature=0.35,
         )
         model_used = primary_model
     except OpenAIError as e:

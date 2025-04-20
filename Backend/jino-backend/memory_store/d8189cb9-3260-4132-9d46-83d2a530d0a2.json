@@ -1,0 +1,15 @@
+{
+  "age": "22",
+  "city": "Not provided",
+  "employment_status": "unemployed",
+  "mood": "sad",
+  "name": "Afnan",
+  "gender": "Man",
+  "location": "Bangalore",
+  "occupation": "Aspiring AI Engineer",
+  "relationship_status": "recently dumped",
+  "lives_with_parents": true,
+  "ex_girlfriend_name": "2050",
+  "current_project": "building JINO",
+  "goals": "get a job, showcase JINO, talk to self-aware personalities"
+}
