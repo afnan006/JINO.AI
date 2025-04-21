@@ -31,7 +31,7 @@ def create_app():
     app = Flask(__name__)
     
     # Enable CORS - open to all origins (safe for dev, limit in prod)
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://your-frontend.com"]}})
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://jino-ai.netlify.app/"]}})
     
     # Load app config
     app.config.from_object(Config)
