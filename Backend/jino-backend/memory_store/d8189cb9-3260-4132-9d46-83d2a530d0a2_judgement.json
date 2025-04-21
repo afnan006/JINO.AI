@@ -1,64 +1,10 @@
 {
   "chat_1": [
     {
-      "timestamp": "2025-04-20T17:16:49.192654",
+      "timestamp": "2025-04-21T00:14:22.334098",
       "category": "emotional_state",
-      "judgement": "User seems sad and frustrated about their employment status.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:18:31.459809",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and seeking validation.",
+      "judgement": "User seems polite and friendly.",
       "confidence": "medium"
-    },
-    {
-      "timestamp": "2025-04-20T17:20:48.297057",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and sensitive about their identity and situation.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:22:02.629345",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and disappointed.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:24:41.356063",
-      "category": "emotional_state",
-      "judgement": "User seems distressed and frustrated, but also sarcastic and defensive.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:29:30.213256",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and bitter.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:30:42.973077",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and bitter, but also sarcastic and humorous.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:33:26.936760",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and sarcastic, but there is a hint of playfulness.",
-      "confidence": "medium"
-    },
-    {
-      "timestamp": "2025-04-20T17:37:05.989974",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and disappointed with their current life situation, possibly experiencing loneliness and low self-esteem.",
-      "confidence": "high"
-    },
-    {
-      "timestamp": "2025-04-20T17:39:41.995077",
-      "category": "emotional_state",
-      "judgement": "User seems frustrated and disappointed with their current life situation.",
-      "confidence": "high"
     }
   ]
 }

@@ -1,0 +1,22 @@
+{
+  "chat_1": [
+    {
+      "timestamp": "2025-04-21T00:28:29.522312",
+      "category": "emotional_state",
+      "judgement": "User seems neutral and formal.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-21T00:34:25.520763",
+      "category": "emotional_state",
+      "judgement": "User appears nostalgic and self-reflective.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-21T00:35:30.777315",
+      "category": "emotional_state",
+      "judgement": "Skeptical or surprised",
+      "confidence": "medium"
+    }
+  ]
+}
