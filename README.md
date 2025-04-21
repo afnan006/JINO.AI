@@ -1,115 +1,251 @@
-# JINO.AI – The Chatbot with a Mouth
+# Jino AI
 
-They told me to build a chatbot that helps people.  
-I'm trying to build one that remembers your crap, roasts you for it, and sets alarms so it never forgets.
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/afnan006/JINO.AI/issues)
 
-JINO.AI isn't your average "Hi, how may I assist you?" bot.  
-It's your emotionally reactive, romantically unstable, sarcastically gifted AI bestie — powered by local memory, bad decisions, and some truly dangerous LLMs.
+A privacy-focused, context-aware conversational AI with dynamic personality and temporal intelligence capabilities. Jino AI maintains comprehensive conversational context while ensuring rigorous user data privacy protection.
 
-This is hands-down one of my favorite projects so far.  
-It's smart, it's spicy, and once it's live… good luck going back to boring bots.
+[Live Demo](https://jino-ai.netlify.app/) | [Report Bug](https://github.com/afnan006/JINO.AI/issues) | [Request Feature](https://github.com/afnan006/JINO.AI/issues)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Technical Implementation](#technical-implementation)
+- [Project Structure](#project-structure)
+- [Installation & Setup](#installation--setup)
+  - [Prerequisites](#prerequisites)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+- [Deployment](#deployment)
+- [Development Roadmap](#development-roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+## Overview
+
+Jino AI is an advanced conversational agent designed to deliver natural, contextually relevant interactions while adhering to stringent privacy standards. The project implements a sophisticated multi-model architecture leveraging OpenRouter to distribute specialized conversational tasks across purpose-optimized AI models:
+
+- **DeepSeek R1**: Performs structured data extraction from conversational inputs
+- **Mixtral 8x7B**: Handles context summarization and memory management
+- **Yi 34B**: Generates contextually appropriate, personality-consistent responses
+
+A custom fine-tuned model is currently under development to further enhance Jino's conversational intelligence and distinctive personality traits.
+
+## Key Features
+
+- 🔒 **Privacy-First Architecture**: End-to-end design that prioritizes user data protection with localized context management
+- 🧠 **Advanced Context Retention**: Maintains comprehensive conversation history for contextually coherent dialogue
+- ⏰ **Temporal Intelligence**: Sophisticated awareness of time-related contexts and conversation timeframes
+- 🎭 **Consistent Personality**: Delivers engaging, coherent character expression throughout user interactions
+- 🔄 **Multi-Model Orchestration**: Intelligently leverages specialized AI models for distinct conversational functions
+- 📊 **Developer Insights Panel**: Real-time visualization of internal processing for development and debugging
+- 🌐 **Modern Web Interface**: Responsive, accessible design built with React and Tailwind CSS
+
+## System Architecture
+
+Jino AI employs a three-tier architecture that separates concerns between data extraction, context management, and response generation:
+
+1. **Data Extraction Layer**: Processes incoming messages to identify entities, intents, and sentiment
+2. **Context Management Layer**: Maintains conversation history with intelligent summarization
+3. **Response Generation Layer**: Creates contextually appropriate, personality-consistent replies
+
+This modular design allows for independent scaling and optimization of each component while maintaining coherent system behavior.
+
+## Technical Implementation
+
+### Backend
+
+- Flask-based RESTful API handling all core AI processing functions
+- Multi-model integration via OpenRouter API for specialized conversational tasks
+- Advanced memory management system for efficient context retention and retrieval
+- Sophisticated judgment logic for evaluating user intent, sentiment, and conversation flow
+- Temporal awareness module for time-sensitive contextual responses
+
+### Frontend
+
+- Modern React application built with Vite for optimal development experience
+- Responsive UI implementation using Tailwind CSS utility framework
+- Component-based architecture for maintainability and reusability
+- Firebase integration for future authentication and data persistence capabilities
+- Real-time message streaming for natural conversation flow
+
+## Project Structure
+
+```
+├── Backend/jino-backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── context.py
+│   │   │   ├── extract.py
+│   │   │   └── reply.py
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── judgement.py
+│   │       ├── memory.py
+│   │       ├── openrouter_client.py
+│   │       ├── time.py
+│   │       └── uuid_gen.py
+│   ├── memory_store/
+│   ├── config.py
+│   ├── requirements.txt
+│   ├── Procfile
+│   ├── run.py
+│   └── wsgi.py
+└── Frontend/jino-ui/
+    ├── src/
+    │   ├── App.jsx
+    │   ├── firebase.js
+    │   ├── index.css
+    │   ├── main.jsx
+    │   └── components/
+    │       ├── ChatWindow.jsx
+    │       ├── DevPanel.jsx
+    │       ├── Home.jsx
+    │       ├── Loader.jsx
+    │       ├── LoginModal.jsx
+    │       ├── MessageBubble.jsx
+    │       └── Navbar.jsx
+    ├── package.json
+    ├── vite.config.js
+    ├── tailwind.config.js
+    ├── postcss.config.js
+    └── eslint.config.js
+```
+
+## Installation & Setup
+
+### Prerequisites
+
+- Python 3.9+
+- Node.js 16+
+- OpenRouter API key
+- Git
+
+### Backend Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/afnan006/JINO.AI.git
+   cd JINO.AI/Backend/jino-backend
+   ```
+
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Create a `.env` file with necessary environment variables:
+   ```
+   OPENROUTER_API_KEY=your_openrouter_api_key
+   FLASK_ENV=development
+   ```
+
+5. Start the Flask server:
+   ```bash
+   python run.py
+   ```
+
+The backend will be available at http://localhost:5000.
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd JINO.AI/Frontend/jino-ui
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file with necessary environment variables:
+   ```
+   VITE_API_URL=http://localhost:5000
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+The frontend will be available at http://localhost:5173.
+
+## Deployment
+
+- **Backend**: Currently deployed on [Render](https://render.com)
+- **Frontend**: Currently deployed on [Netlify](https://netlify.com)
+
+Comprehensive deployment documentation is available in the [deployment guide](./docs/deployment.md).
+
+## Development Roadmap
+
+- [ ] Complete custom model fine-tuning for enhanced conversational abilities
+- [ ] Implement secure user authentication and session management
+- [ ] Add conversation export/import functionality for data portability
+- [ ] Enhance personality traits with customization options
+- [ ] Optimize response latency and system reliability
+- [ ] Develop companion mobile application
+- [ ] Implement advanced analytics for conversation insights
+- [ ] Add multilingual support capabilities
+
+## Contributing
+
+Jino AI is an open-source project, and contributions are enthusiastically welcomed. Whether you're fixing bugs, improving documentation, or proposing new features, your input is valuable.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please refer to the [contribution guidelines](./CONTRIBUTING.md) for detailed information.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2025 Afnan Ahmed
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Contact
+
+**Afnan Ahmed** - [afnan006cs@gmail.com](mailto:afnan006cs@gmail.com)
+
+Project Link: [https://github.com/afnan006/JINO.AI](https://github.com/afnan006/JINO.AI)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 🚧 Under Construction... Like That One Bangalore Flyover
-
-This is the **MVP v1.0** of JINO.AI's backend —  
-Still early, still evolving, but already talking back with style.
-
-### ✅ What's Working:
-
-- **`/extract` Route**  
-  Turns messy human rambling into structured JSON.  
-  JINO detects categories like love, health, work, and general life crisis for memory storage.
-
-- **Local Memory Logic**  
-  All memory is stored in the user's browser. No cloud snooping. No servers peeking. Just pure local gossip.
-
-- **No Context Loss**  
-  Leave for a month, come back, and JINO still remembers that one thing you wish you hadn't said.
-
-- **Local Time Awareness**  
-  For perfectly-timed sarcasm and midnight guilt trips.
-
-- **Smart Alarms & Reminders** *(Coming Soon)*  
-  Say "I have a meeting tomorrow at 10" — JINO catches it, sets it, and reminds you like a clingy calendar.
-
-- **Sarcastic Replies** *(via Mixtral 8x7B for now)*  
-  Custom finetuned model is on the way.  
-  Once it's trained, expect even more personality — with full control over tone, sass, and memory recall.
-
----
-
-## 🧠 What Makes This Project Different
-
-This isn't just a glorified OpenAI wrapper.  
-You're looking at a sarcasm-fueled architecture with real engineering under the hood:
-
-- **Real Personality Logic**  
-  Replies are shaped by both memory and emotion. JINO doesn't just know — it feels.
-
-- **Emotional Judgement Layer**  
-  Stores its "opinion" of you over time — and adjusts tone accordingly.
-
-- **Chat Shifting System**  
-  Max 10 active chats per user. No hoarding. Clean slate enforced manually.
-
-- **Local Memory Parsing**  
-  Extracted, structured, and updated without flooding the AI with entire histories.
-
-- **AI-Powered Context Summarization**  
-  Last 5 messages are summarized into a clean, prompt-friendly context.
-
-- **Backend/Frontend Separation**  
-  - **Backend:** Flask + PostgreSQL + OpenRouter  
-  - **Frontend:** React + Tailwind + Firebase Auth (coming post-MVP)
-
-- **Multi-Model Orchestration**  
-  - `extract`: DeepSeek R1  
-  - `context`: Mixtral 8x7B  
-  - `reply`: Yi 34B  
-  Each model is used where it shines — keeping performance tight and cost low.
-
-- **Token-Managed Prompting**  
-  Only relevant memory and context are sent to the AI. Optimized for performance and personality.
-
-- **Privacy-First Design**  
-  Memory lives in localStorage. UUID is device-specific. No token expiry issues. You're always logged in unless you log out.
-
----
-
-## 📊 Project Status
-
-| Feature        | Status         |
-|----------------|----------------|
-| `/extract`     | ✅ Live and working |
-| Memory System  | ✅ Integrated      |
-| `/context`     | 🔄 In Progress     |
-| `/reply`       | 🧪 Under Testing   |
-| Reminders      | 📅 Planned         |
-| Custom Model   | 🏋️ In Training     |
-
----
-
-## 👨‍💻 Built By
-
-**Afnan Ahmed** — Python + AI Backend Developer.  
-Trying to build sarcastic systems and unapologetic logic.  
-
----
-
-## ⚠️ Disclaimer
-
-JINO.AI is not emotionally stable.  
-It *will* remember what you said last summer — and bring it up mid-chat with no mercy.  
-You've been warned.
-
----
-
-## 🔮 Final Word
-
-This isn't just another AI chatbot.  
-This is sarcasm, structured memory, emotion layers, token awareness, and multi-model orchestration — all built from scratch with zero fluff.
-
-**JINO.AI** is designed to out-remember you, out-roast you, and maybe, one day, outgrow you.  
-Until then… enjoy the chaos.
+Built with ❤️ by Afnan Ahmed, Aspiring AI Full Stack Developer.
