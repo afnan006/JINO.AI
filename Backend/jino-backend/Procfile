@@ -1,1 +1,1 @@
-web: gunicorn wsgi:app --chdir jino-backend
+web: gunicorn wsgi:app
