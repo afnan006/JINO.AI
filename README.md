@@ -4,7 +4,7 @@
 
 A privacy-focused, context-aware conversational AI with dynamic personality and temporal intelligence capabilities. Jino AI maintains comprehensive conversational context while ensuring rigorous user data privacy protection.
 
-[Live Demo](https://jino-ai.netlify.app/) | [Report Bug](https://github.com/afnan006/JINO.AI/issues) | [Request Feature](https://github.com/afnan006/JINO.AI/issues)
+[Live Demo](https://jino-ai.netlify.app/) Work In Progress | [Report Bug](https://github.com/afnan006/JINO.AI/issues) | [Request Feature](https://github.com/afnan006/JINO.AI/issues)
 
 ## Table of Contents
 
@@ -31,7 +31,8 @@ Jino AI is an advanced conversational agent designed to deliver natural, context
 - **Mixtral 8x7B**: Handles context summarization and memory management
 - **Yi 34B**: Generates contextually appropriate, personality-consistent responses
 
-A custom fine-tuned model is currently under development to further enhance Jino's conversational intelligence and distinctive personality traits.
+A custom fine-tuned model is currently under development to further enhance Jino's conversational intelligence and distinctive personality traits, with a addition of alarms and remainders using NLP from user message
+"I have a meeting at 10am tommorow" Remainder set to 10am with a custom message.
 
 ## Key Features
 
@@ -68,8 +69,8 @@ This modular design allows for independent scaling and optimization of each comp
 - Modern React application built with Vite for optimal development experience
 - Responsive UI implementation using Tailwind CSS utility framework
 - Component-based architecture for maintainability and reusability
-- Firebase integration for future authentication and data persistence capabilities
-- Real-time message streaming for natural conversation flow
+- Firebase integration with Google SignIn authentication and data persistence capabilities
+- Real-time message streaming for natural conversation flow with local device timestamps
 
 ## Project Structure
 
@@ -191,7 +192,6 @@ Comprehensive deployment documentation is available in the [deployment guide](./
 ## Development Roadmap
 
 - [ ] Complete custom model fine-tuning for enhanced conversational abilities
-- [ ] Implement secure user authentication and session management
 - [ ] Add conversation export/import functionality for data portability
 - [ ] Enhance personality traits with customization options
 - [ ] Optimize response latency and system reliability
