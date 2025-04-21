@@ -1,4 +1,4 @@
-from app import create_app  # Import create_app function from app/__init__.py
+from app import create_app
 
 app = create_app()  # Create the app instance
 
