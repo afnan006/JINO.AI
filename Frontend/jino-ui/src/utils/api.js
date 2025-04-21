@@ -107,7 +107,7 @@
 //   }
 // };
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = "https://jino-ai.onrender.com";
 import {
   getUUID,
   getMemory,
