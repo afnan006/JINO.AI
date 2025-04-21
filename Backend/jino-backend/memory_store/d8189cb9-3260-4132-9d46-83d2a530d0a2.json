@@ -3,14 +3,16 @@
   "city": "Not provided",
   "employment_status": "unemployed",
   "mood": "sad",
-  "name": "afnan",
+  "name": "The user's name is not explicitly provided in the message, but it seems they want to remind or confirm their name.",
   "gender": "Man",
   "location": "Bangalore",
   "occupation": "Aspiring comedian",
   "relationship_status": "recently dumped",
   "lives_with_parents": true,
-  "job": "Not provided",
+  "job": "fulltime AIML engineer",
   "ex_girlfriend_name": "2050",
   "current_project": "building JINO",
-  "goals": "get a job, showcase JINO, talk to self-aware personalities"
+  "goals": "get a job, showcase JINO, talk to self-aware personalities",
+  "hobby": "part time comedian",
+  "skills": "building AI, teaching sarcasm"
 }

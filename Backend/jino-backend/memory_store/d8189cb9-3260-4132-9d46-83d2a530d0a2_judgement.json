@@ -5,6 +5,30 @@
       "category": "emotional_state",
       "judgement": "User seems polite and friendly.",
       "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-21T02:49:28.453779",
+      "category": "emotional_state",
+      "judgement": "User seems friendly.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-21T02:52:06.159169",
+      "category": "emotional_state",
+      "judgement": "Curious and open-minded.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-21T02:53:51.464350",
+      "category": "emotional_state",
+      "judgement": "User seems confident and friendly.",
+      "confidence": "medium"
+    },
+    {
+      "timestamp": "2025-04-21T02:55:07.326766",
+      "category": "emotional_state",
+      "judgement": "User seems insistent but patient.",
+      "confidence": "medium"
     }
   ]
 }

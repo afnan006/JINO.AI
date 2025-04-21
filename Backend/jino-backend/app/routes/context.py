@@ -93,7 +93,7 @@ Only return the final message as if written by the user. No explanation. No fram
             result = call_openrouter(
                 model="mistralai/mixtral-8x7b-instruct",
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.4
+                temperature=0.2
             )
             compact_prompt = result.get("content", "").strip()
 

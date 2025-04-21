@@ -46,7 +46,8 @@ def reply():
         response = call_openrouter(
             model=primary_model,
             messages=messages,
-            temperature=0.35,
+            temperature=0.15,
+            max_tokens=500
         )
         model_used = primary_model
     except OpenAIError as e:

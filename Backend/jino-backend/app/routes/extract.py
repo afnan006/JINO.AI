@@ -83,7 +83,7 @@ User message: "{user_input}"
             result = call_openrouter(
                 model=model,
                 messages=[{"role": "user", "content": base_prompt}],
-                temperature=0.3,
+                temperature=0.2,
                 max_tokens=500
             )
 
