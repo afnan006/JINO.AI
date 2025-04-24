@@ -220,8 +220,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 **Afnan Ahmed** - [afnan006cs@gmail.com](mailto:afnan006cs@gmail.com)
 
 Project Link: [https://github.com/afnan006/JINO.AI](https://github.com/afnan006/JINO.AI)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-
 ---
 
 Built with Curiosity by Afnan Ahmed, Aspiring AI Backend Developer.
